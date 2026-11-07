@@ -11,7 +11,7 @@ find_package(Vulkan COMPONENTS glslc REQUIRED)
 if (DEFINED ENV{VULKAN_SDK})
     list(APPEND CMAKE_PREFIX_PATH "$ENV{VULKAN_SDK}")
 endif()
-find_package(SPIRV-Headers CONFIG REQUIRED)
+find_package(SPIRV-Headers CONFIG QUIET)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Parallel build object files
@@ -121,6 +121,10 @@ if (Vulkan_FOUND)
 
     target_link_libraries(ggml-vulkan PRIVATE Vulkan::Vulkan)
     target_include_directories(ggml-vulkan PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+    if (ANDROID AND DEFINED ANDROID_NDK)
+        # SPIRV-Headers has no CONFIG package on the NDK, use the copy bundled with shaderc instead
+        target_include_directories(ggml-vulkan PRIVATE "${ANDROID_NDK}/sources/third_party/shaderc/third_party/spirv-tools/external/spirv-headers/include")
+    endif()
 
     # Workaround to the "can't dereference invalidated vector iterator" bug in clang-cl debug build
     # Possibly relevant: https://stackoverflow.com/questions/74748276/visual-studio-no-displays-the-correct-length-of-stdvector
